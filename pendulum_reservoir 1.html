@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Where does the energy go? — A pendulum reservoir</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#0d2035;
+  --bg-2:#0a1a2c;
+  --panel:#12283f;
+  --panel-2:#16324d;
+  --line:#2c4a66;
+  --line-soft:#1c374f;
+  --ink:#eaf1f7;
+  --ink-dim:#9fb4c7;
+  --ink-faint:#6d879d;
+  --brass:#d1a24a;
+  --brass-hi:#e8bd6c;
+  --cyan:#7fd8d3;
+  --cyan-dim:#3f6f6c;
+  --violet:#b48fd6;
+  --violet-hi:#cbb0e6;
+  --green:#5fa578;
+  --green-dim:#2f4f3c;
+  --silver:#cdd9e2;
+  --danger:#d18a6a;
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:
+    radial-gradient(1200px 600px at 15% -10%, #133150 0%, transparent 60%),
+    repeating-linear-gradient(0deg, var(--line-soft) 0 1px, transparent 1px 42px),
+    repeating-linear-gradient(90deg, var(--line-soft) 0 1px, transparent 1px 42px),
+    var(--bg);
+  color:var(--ink);
+  font-family:'IBM Plex Sans', system-ui, sans-serif;
+  line-height:1.5;
+  padding:28px 20px 60px;
+}
+.wrap{max-width:1180px;margin:0 auto;}
+
+header{margin-bottom:26px;}
+.eyebrow{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:12px;
+  letter-spacing:.14em;
+  color:var(--brass);
+  text-transform:uppercase;
+  margin:0 0 10px;
+}
+h1{
+  font-family:'Source Serif 4', Georgia, serif;
+  font-weight:700;
+  font-size:clamp(28px,4vw,42px);
+  margin:0 0 10px;
+  color:var(--ink);
+  letter-spacing:-.01em;
+}
+.sub{
+  color:var(--ink-dim);
+  max-width:66ch;
+  font-size:15.5px;
+  margin:0;
+}
+.sub b{color:var(--silver);font-weight:600;}
+.byline{
+  font-family:'IBM Plex Mono', ui-monospace, monospace;
+  font-size:12.5px;
+  color:var(--ink-faint);
+  margin:0 0 12px;
+  letter-spacing:.02em;
+}
+.byline b{color:var(--brass-hi); font-weight:600;}
+
+/* preset row */
+.presets{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+  margin:26px 0 14px;
+}
+.preset-btn{
+  text-align:left;
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  color:var(--ink);
+  padding:14px 16px;
+  cursor:pointer;
+  font-family:'IBM Plex Sans', sans-serif;
+  transition:border-color .15s ease, background .15s ease, transform .1s ease;
+}
+.preset-btn:hover{border-color:var(--brass); transform:translateY(-1px);}
+.preset-btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+.preset-btn.active{
+  border-color:var(--brass);
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  box-shadow:0 0 0 1px var(--brass) inset;
+}
+.preset-num{
+  font-family:'IBM Plex Mono', monospace;
+  color:var(--brass);
+  font-size:12px;
+  letter-spacing:.08em;
+}
+.preset-title{font-weight:600;font-size:15px;margin:3px 0 3px;color:var(--silver);}
+.preset-desc{font-size:12.5px;color:var(--ink-dim);}
+
+/* scene card */
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+}
+.scene-card{margin-bottom:16px;}
+.scene-wrap{
+  width:100%;
+  border-radius:8px;
+  overflow:hidden;
+  background:
+    radial-gradient(700px 300px at 10% 0%, #143559 0%, transparent 70%),
+    var(--bg-2);
+  border:1px solid var(--line-soft);
+}
+canvas#scene{display:block;width:100%;height:380px;}
+.scene-caption{
+  font-size:12px;
+  color:var(--ink-faint);
+  font-style:italic;
+  margin:10px 2px 0;
+}
+
+.toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:10px;
+  margin-top:14px;
+}
+.btn{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:13px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--ink);
+  padding:9px 14px;
+  border-radius:7px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.btn:hover{border-color:var(--brass);}
+.btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+.btn.primary{background:linear-gradient(180deg,var(--brass-hi),var(--brass)); color:#2a1c05; border-color:var(--brass); font-weight:600;}
+.spacer{flex:1;}
+.speed-inline{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-dim);}
+.speed-inline input[type=range]{width:110px;}
+
+/* grid for controls + chart */
+.grid2{
+  display:grid;
+  grid-template-columns:minmax(300px,380px) 1fr;
+  gap:16px;
+  align-items:stretch;
+}
+@media (max-width:1040px){ .presets{grid-template-columns:repeat(2,1fr);} }
+@media (max-width:880px){ .grid2{grid-template-columns:1fr;} }
+@media (max-width:560px){ .presets{grid-template-columns:1fr;} }
+
+.panel-title{
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11.5px;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  margin:0 0 14px;
+}
+
+.field{margin-bottom:16px;}
+.field:last-child{margin-bottom:0;}
+.field label{
+  display:flex;
+  justify-content:space-between;
+  font-size:13px;
+  color:var(--ink-dim);
+  margin-bottom:6px;
+}
+.field label .val{
+  font-family:'IBM Plex Mono', monospace;
+  color:var(--brass-hi);
+  font-size:12.5px;
+}
+input[type=range]{
+  -webkit-appearance:none;
+  width:100%;
+  height:4px;
+  border-radius:2px;
+  background:var(--line);
+  outline:none;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:15px;height:15px;border-radius:50%;
+  background:var(--brass-hi);
+  border:2px solid #3a2a0c;
+  cursor:pointer;
+  margin-top:-1px;
+}
+input[type=range]::-moz-range-thumb{
+  width:13px;height:13px;border-radius:50%;
+  background:var(--brass-hi); border:2px solid #3a2a0c; cursor:pointer;
+}
+.hint{font-size:11.5px;color:var(--ink-faint);margin-top:4px;}
+.warn{
+  font-size:12px;
+  color:var(--danger);
+  background:rgba(209,138,106,.08);
+  border:1px solid rgba(209,138,106,.3);
+  padding:8px 10px;
+  border-radius:6px;
+  margin-top:14px;
+  display:none;
+}
+.warn.show{display:block;}
+.info{
+  font-size:12px;
+  color:var(--cyan);
+  background:rgba(127,216,211,.08);
+  border:1px solid rgba(127,216,211,.3);
+  padding:8px 10px;
+  border-radius:6px;
+  margin-top:10px;
+  display:none;
+}
+.info.show{display:block;}
+
+.readouts{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:18px;
+  padding-top:16px;
+  border-top:1px dashed var(--line);
+}
+.ro{background:var(--panel-2); border:1px solid var(--line); border-radius:7px; padding:9px 11px;}
+.ro-label{font-size:10.5px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.08em; font-family:'IBM Plex Mono',monospace;}
+.ro-val{font-family:'IBM Plex Mono', monospace; font-size:17px; color:var(--silver); margin-top:2px;}
+.ro-val.cyan{color:var(--cyan);}
+.ro-val.green{color:var(--green);}
+.readouts-3col{ grid-template-columns:1fr 1fr 1fr; margin-top:14px; }
+@media (max-width:640px){ .readouts-3col{ grid-template-columns:1fr 1fr; } }
+@media (max-width:420px){ .readouts-3col{ grid-template-columns:1fr; } }
+
+/* chart card */
+.chart-card{display:flex; flex-direction:column;}
+.legend{display:flex; gap:16px; margin-bottom:10px;}
+.legend-item{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-dim);}
+.swatch{width:11px;height:11px;border-radius:3px;}
+canvas#chart{width:100%; height:260px; display:block; border-radius:8px; background:var(--bg-2); border:1px solid var(--line-soft);}
+.chart-foot{font-size:11.5px; color:var(--ink-faint); margin-top:8px;}
+.diag-canvas{width:100%; height:220px; display:block; border-radius:8px; background:var(--bg-2); border:1px solid var(--line-soft);}
+.atom-chart{width:100%; height:260px; display:block; border-radius:8px; background:var(--bg-2); border:1px solid var(--line-soft);}
+
+/* notes */
+.notes{margin-top:30px;}
+.notes h2{
+  font-family:'Source Serif 4', serif;
+  font-size:22px;
+  color:var(--silver);
+  margin:0 0 16px;
+}
+.note-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
+@media (max-width:1040px){ .note-grid{grid-template-columns:repeat(2,1fr);} }
+@media (max-width:560px){ .note-grid{grid-template-columns:1fr;} }
+.note{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); padding:16px;}
+.note .k{font-family:'IBM Plex Mono',monospace; color:var(--brass); font-size:12px;}
+.note h3{margin:6px 0 8px; font-size:15px; color:var(--silver); font-family:'IBM Plex Sans'; font-weight:600;}
+.note p{margin:0; font-size:13.5px; color:var(--ink-dim);}
+.callout{
+  margin-top:14px;
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--brass);
+  border-radius:var(--radius);
+  padding:16px 18px;
+}
+.callout h3{margin:0 0 8px; font-size:15px; color:var(--brass-hi); font-family:'IBM Plex Sans'; font-weight:600;}
+.callout p{margin:0; font-size:13.5px; color:var(--ink-dim);}
+.feynman-card{
+  display:flex;
+  gap:18px;
+  align-items:flex-start;
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px 18px;
+  margin-top:14px;
+}
+.feynman-photo-wrap{ position:relative; flex:0 0 auto; }
+.feynman-photo{
+  width:96px; height:124px; object-fit:cover;
+  border-radius:6px; border:1px solid var(--line);
+  filter:sepia(25%) contrast(1.02);
+  box-shadow:0 2px 10px rgba(0,0,0,.35);
+  display:block;
+}
+.feynman-photo-fallback{
+  display:none; width:96px; height:124px; border-radius:6px;
+  border:1px solid var(--line); background:var(--panel-2);
+  align-items:center; justify-content:center;
+  font-family:'Source Serif 4',serif; font-style:italic; font-size:22px;
+  color:var(--brass-hi);
+}
+.feynman-kicker{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em;
+  color:var(--brass); text-transform:uppercase; margin:0 0 8px;
+}
+.feynman-text p{margin:0 0 8px; font-size:13.5px; color:var(--ink-dim);}
+.feynman-credit{font-size:11px !important; color:var(--ink-faint) !important; font-style:italic;}
+@media (max-width:560px){ .feynman-card{flex-direction:column; align-items:center; text-align:center;} }
+
+.achieves-row{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+  margin:22px 0 4px;
+}
+@media (max-width:880px){ .achieves-row{grid-template-columns:1fr;} }
+.achieves-item{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  padding:14px 16px;
+}
+.achieves-num{
+  font-family:'IBM Plex Mono',monospace; color:var(--brass); font-size:11px;
+  letter-spacing:.1em; margin-bottom:4px; text-transform:uppercase;
+}
+.achieves-title{font-weight:600; color:var(--silver); font-size:14.5px; margin-bottom:6px; font-family:'IBM Plex Sans';}
+.achieves-item p{margin:0; font-size:12.5px; color:var(--ink-dim);}
+
+.model-card{
+  margin-top:14px; background:var(--panel); border:1px solid var(--line);
+  border-radius:var(--radius); padding:16px 18px;
+}
+.model-kicker{
+  font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em;
+  color:var(--brass); text-transform:uppercase; margin:0 0 12px;
+}
+.model-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+@media (max-width:1040px){ .model-grid{grid-template-columns:repeat(2,1fr);} }
+@media (max-width:560px){ .model-grid{grid-template-columns:1fr;} }
+.model-eq{
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--cyan);
+  background:var(--bg-2); border:1px solid var(--line-soft); border-radius:6px;
+  padding:7px 8px; margin-bottom:8px; text-align:center;
+}
+.model-item p{margin:0; font-size:12.5px; color:var(--ink-dim);}
+.model-item b{color:var(--silver);}
+footer{margin-top:34px; font-size:12px; color:var(--ink-faint); text-align:center;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Open systems · a mechanical analogy</p>
+  <h1>Where does the energy go?</h1>
+  <p class="byline">An interactive notebook by <b>Muhammad Daniyal Chundrigar</b></p>
+  <p class="sub">One pendulum is nudged and starts to swing. It is weakly linked, through a spring on a shared support bar, to a family of other pendulums — its <b>environment</b>. Watch what happens to the energy as the environment grows from <b>one</b> partner, to <b>two</b>, to <b>many</b> spread across a range of frequencies, to an idealized <b>infinite</b> reservoir where it never returns.</p>
+  <div class="achieves-row">
+    <div class="achieves-item">
+      <div class="achieves-num">Exact dissipation</div>
+      <div class="achieves-title">Friction, derived — not assumed</div>
+      <p>Eliminate the bath exactly and the system's own equation grows a genuine friction term. See preset ④.</p>
+    </div>
+    <div class="achieves-item">
+      <div class="achieves-num">Noise generation</div>
+      <div class="achieves-title">The kicks that come back</div>
+      <p>A warm bath doesn't just absorb — it hands random thermal kicks back too, at a rate locked to how fast it dissipates. See the Temperature slider.</p>
+    </div>
+    <div class="achieves-item">
+      <div class="achieves-num">Quantum decoherence</div>
+      <div class="achieves-title">Superposition, undone</div>
+      <p>The same coupling that lets the atom decay also erases its ability to stay in superposition — twice as fast. See the Coherence trace below.</p>
+    </div>
+  </div>
+</header>
+
+<div class="presets">
+  <button class="preset-btn" data-preset="0">
+    <div class="preset-num">① ONE PARTNER</div>
+    <div class="preset-title">A clean beat</div>
+    <div class="preset-desc">Energy sloshes back and forth on a simple, regular clock. Fully reversible, fully periodic.</div>
+  </button>
+  <button class="preset-btn" data-preset="1">
+    <div class="preset-num">② TWO PARTNERS</div>
+    <div class="preset-title">A messier recurrence</div>
+    <div class="preset-desc">Energy visits both neighbours before eventually finding its way back — a longer, lumpier cycle.</div>
+  </button>
+  <button class="preset-btn" data-preset="2">
+    <div class="preset-num">③ MANY PARTNERS</div>
+    <div class="preset-title">A reservoir</div>
+    <div class="preset-desc">Spread across many frequencies, the energy leaves and — for all practical purposes — never comes back.</div>
+  </button>
+  <button class="preset-btn" data-preset="3">
+    <div class="preset-num">④ INFINITE PARTNERS</div>
+    <div class="preset-title">Provably irreversible</div>
+    <div class="preset-desc">Solved directly as the exact continuum limit — a damped oscillator. No recurrence term survives. The energy leaves and never, ever comes back.</div>
+  </button>
+</div>
+
+<div class="card scene-card">
+  <div class="scene-wrap"><canvas id="scene"></canvas></div>
+  <p class="scene-caption">Idealized small-oscillation pendulums, linearly coupled. Pendulum length now encodes natural frequency (L = g/ω²) — short pendulums swing fast (high ω), long ones swing slow (low ω), so the spread you dial in is visible before anything even moves. Swing angles are magnified ×4 so faint motion stays visible. In presets ①–③ the coupling is a real spring and total mechanical energy is exactly conserved. In preset ④ the system instead obeys the exact equation for radiating into a genuine continuum — energy leaves it and is not given back.</p>
+  <div class="toolbar">
+    <button class="btn primary" id="playBtn">⏸ Pause</button>
+    <button class="btn" id="resetBtn">↺ Reset</button>
+    <div class="speed-inline">
+      <span>Speed</span>
+      <input type="range" id="sliderSpeed" min="0.25" max="8" step="0.25" value="1">
+      <span class="val" id="labelSpeed" style="font-family:'IBM Plex Mono',monospace;">1.00×</span>
+    </div>
+    <div class="spacer"></div>
+  </div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <p class="panel-title">Apparatus controls</p>
+
+    <div class="field">
+      <label>Environment pendulums (N) <span class="val" id="labelN">1</span></label>
+      <input type="range" id="sliderN" min="1" max="200" step="1" value="1">
+      <div class="hint">Restarts the simulation when released — think of it as re-wiring the apparatus.</div>
+    </div>
+
+    <div class="field">
+      <label>Frequency spread Δω/ω₀ <span class="val" id="labelSpread">0.00</span></label>
+      <input type="range" id="sliderSpread" min="0" max="1" step="0.01" value="0">
+      <div class="hint">How far the environment's natural frequencies fan out around the system's.</div>
+    </div>
+
+    <div class="field">
+      <label>Coupling strength κ <span class="val" id="labelKappa">0.14</span></label>
+      <input type="range" id="sliderKappa" min="0.02" max="0.4" step="0.01" value="0.14">
+      <div class="hint">How firmly the spring links system to environment.</div>
+    </div>
+
+    <div id="gammaField" style="display:none;">
+      <div class="field">
+        <label>Decay rate γ <span class="val" id="labelGamma">0.05</span></label>
+        <input type="range" id="sliderGamma" min="0.01" max="0.3" step="0.005" value="0.05">
+        <div class="hint">How fast the system radiates energy into the idealized continuum — this is what makes preset ④ irreversible.</div>
+      </div>
+      <div class="field">
+        <label>Bath temperature T <span class="val" id="labelTemp">0.000</span></label>
+        <input type="range" id="sliderTemp" min="0" max="0.05" step="0.001" value="0">
+        <div class="hint">T = 0: true vacuum — energy drains to exactly zero. T &gt; 0: the bath fluctuates back — energy settles to a nonzero equilibrium (fluctuation–dissipation theorem).</div>
+      </div>
+    </div>
+
+    <div class="warn" id="degenWarn">⚠ No frequency spread: even with many partners, they act as one — energy returns periodically, forever. It's the <em>spread</em>, not the count, that makes it irreversible.</div>
+    <div class="info" id="infiniteNote">∞ This preset switches to the exact idealized equation for a true continuum: the system becomes a plain damped oscillator, θ̈ + γθ̇ + ω₀²θ = 0, with no coupling term left that could ever bring the energy back. The pictured environment pendulums are driven by the system (one-way) purely to show where the radiated energy is going. Raise the temperature below to see the flip side — a warm bath hands a little energy back, on average, forever.</div>
+
+    <div class="readouts">
+      <div class="ro"><div class="ro-label">System energy</div><div class="ro-val cyan" id="roSys">100.0%</div></div>
+      <div class="ro"><div class="ro-label">Environment energy</div><div class="ro-val green" id="roEnv">0.0%</div></div>
+      <div class="ro"><div class="ro-label">Elapsed periods</div><div class="ro-val" id="roPeriods">0.0</div></div>
+      <div class="ro"><div class="ro-label">Long-run outcome</div><div class="ro-val" id="roRevival">—</div></div>
+    </div>
+  </div>
+
+  <div class="card chart-card">
+    <p class="panel-title">Live trace — where the energy currently sits</p>
+    <div class="legend">
+      <div class="legend-item"><span class="swatch" style="background:var(--cyan);"></span>System</div>
+      <div class="legend-item"><span class="swatch" style="background:var(--green);"></span>Environment</div>
+      <div class="spacer"></div>
+      <button class="btn" id="logToggle" style="padding:4px 10px;font-size:11px;">Log scale: Off</button>
+    </div>
+    <canvas id="chart"></canvas>
+    <p class="chart-foot">Scrolling window of the most recent oscillations. Watch whether the cyan trace ever climbs back to 100%. The dashed line in preset ④ is the theoretical zero-temperature prediction, 100·e<sup>−γt</sup>.</p>
+  </div>
+</div>
+
+<div class="grid2" style="margin-top:16px;">
+  <div class="card chart-card">
+    <p class="panel-title">Phase portrait — system pendulum (θ, θ̇)</p>
+    <canvas id="phaseCanvas" class="diag-canvas"></canvas>
+    <p class="chart-foot">A closed loop means the motion recurs. A spiral shrinking into the centre means energy that's leaving for good — the width it settles to reflects the bath temperature.</p>
+  </div>
+  <div class="card chart-card">
+    <p class="panel-title">Spectral density — absorbed energy by frequency</p>
+    <canvas id="spectrumCanvas" class="diag-canvas"></canvas>
+    <p class="chart-foot">Dashed line: the spectral density J(ω) you actually dialed in — flat, because every mode gets the same coupling κᵢ. Bars: where the energy actually ends up, binned by frequency ω<sub>i</sub>. For a weakly-coupled continuum the bars trace a Lorentzian centred on ω₀ with width γ — Fermi's Golden Rule turning a flat input into a peaked outcome.</p>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>The physics behind it</h2>
+  <div class="note-grid">
+    <div class="note">
+      <div class="k">01</div>
+      <h3>One partner — normal modes beating</h3>
+      <p>Two pendulums linked by a weak spring don't have "a" frequency each anymore — the pair has two shared <em>normal modes</em>, slightly split in frequency. Starting with all the energy in one pendulum is a superposition of those two modes, and they drift out of phase and back into phase on a regular clock. That drift <em>is</em> the energy handoff — perfectly periodic, perfectly reversible.</p>
+    </div>
+    <div class="note">
+      <div class="k">02</div>
+      <h3>A few partners — quasi-periodic recurrence</h3>
+      <p>With two or three linked partners there are now three or four normal modes instead of two. The motion is a sum of several incommensurate frequencies, so it looks irregular — energy visits each partner in turn — but with only a handful of frequencies, they realign every so often. Poincaré's recurrence theorem guarantees it: a closed, finite system always finds its way arbitrarily close to where it started, eventually.</p>
+    </div>
+    <div class="note">
+      <div class="k">03</div>
+      <h3>Many, spread-out partners — a reservoir</h3>
+      <p>Add many environment pendulums whose frequencies are spread over a band, and the sum has so many incommensurate frequencies that they interfere destructively for a very long time before ever realigning. The energy doesn't vanish — total energy is still exactly conserved — it just dilutes across so many partners, and the return is delayed so far that it becomes practically unobservable. This is the classical cousin of Fermi's Golden Rule and Wigner–Weisskopf decay: irreversible-looking relaxation emerging from fully reversible, unitary dynamics, once a system talks to a large enough continuum.</p>
+    </div>
+    <div class="note">
+      <div class="k">04</div>
+      <h3>Infinite partners — provably irreversible</h3>
+      <p>A genuine continuum can be solved exactly: eliminate the bath analytically and the system's own equation of motion becomes a plain damped oscillator, θ̈ + γθ̇ + ω₀²θ = 0. That equation has no coupling term left to bring the energy back — its decay is monotonic by construction, for any amount of time, however long you wait. This preset integrates that limiting equation directly, rather than approximating the continuum with a very large but still-finite N. So unlike ①–③, this isn't recurrence pushed further away: there is no recurrence term at all. It's the classical shadow of real radiative damping and spontaneous emission, where a bound state doesn't survive contact with a true continuum of modes.</p>
+    </div>
+  </div>
+  <div class="callout">
+    <h3>The subtlety worth noticing</h3>
+    <p>Set the frequency spread to zero and crank the environment count up anyway — the recurrence never gets pushed out to long times the way it does with a real spread; it stays within a few periods, always. That much doesn't change with N. What does change is subtler: an identical bath collapses onto one collective "bright" mode, but that mode's back-reaction shifts the system's own effective frequency by an amount that grows with N — so the two are increasingly off-resonance, and the exchange gets shallower rather than slower. Either way, what actually manufactures <em>irreversibility</em> (a return delayed indefinitely) is <b>dephasing among distinct frequencies</b>, not sheer numbers. Real environments look irreversible because they offer a genuine continuum of frequencies — the N → ∞, Δω → continuous limit, where the revival time is pushed out to infinity.</p>
+  </div>
+
+  <div class="feynman-card">
+    <div class="feynman-photo-wrap">
+      <img class="feynman-photo" alt="Richard Feynman, Los Alamos identification badge photograph, 1943"
+           src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/bf/Richard_P._Feynman_Los_Alamos_ID_badge_photo.jpg/400px-Richard_P._Feynman_Los_Alamos_ID_badge_photo.jpg"
+           onerror="this.onerror=null;this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/5/50/Richard_Feynman%27s_badge_photo_from_Los_Alamos_National_Laboratory.jpg/400px-Richard_Feynman%27s_badge_photo_from_Los_Alamos_National_Laboratory.jpg';this.onerror=function(){this.style.display='none'; this.nextElementSibling.style.display='flex';};">
+      <div class="feynman-photo-fallback">R.F.</div>
+    </div>
+    <div class="feynman-text">
+      <p class="feynman-kicker">Where this whole model comes from</p>
+      <p>The trick behind every pendulum bath and every photon mode on this page — treat a messy environment as a big collection of independent harmonic oscillators — traces back to Richard Feynman, whose work with F. L. Vernon on dissipative quantum systems became the standard starting point (later formalized by Caldeira and Leggett) for turning "the environment" from a vague hand-wave into something you can actually solve. This page runs that idea twice: once classically, with pendulums; once quantum mechanically, with the two-level atom below.</p>
+      <p class="feynman-credit">Photo: Richard Feynman's Los Alamos identification badge, 1943 — Los Alamos National Laboratory, public domain, via Wikimedia Commons.</p>
+    </div>
+  </div>
+
+  <div class="model-card">
+    <p class="model-kicker">The model, named</p>
+    <div class="model-grid">
+      <div class="model-item">
+        <div class="model-eq">H = H_S + H_B + H_int</div>
+        <p>Every version on this page splits into exactly these three pieces: a system, a bath, and whatever links them.</p>
+      </div>
+      <div class="model-item">
+        <div class="model-eq">H_S</div>
+        <p><b>System Hamiltonian</b> — the one thing you actually care about: the swinging pendulum θ₀ above, or the two-level atom |e⟩/|g⟩ below.</p>
+      </div>
+      <div class="model-item">
+        <div class="model-eq">H_B = Σᵢ ½(vᵢ² + ωᵢ²θᵢ²)</div>
+        <p><b>Bath Hamiltonian</b> — a large collection of independent oscillators (pendulums, or field modes), spanning a range of frequencies ωᵢ, that never talk to each other — only to the system.</p>
+      </div>
+      <div class="model-item">
+        <div class="model-eq">J(ω) ∝ Σᵢ κᵢ² δ(ω−ωᵢ)</div>
+        <p><b>Spectral density</b> — how strongly the bath couples to the system at each frequency. Its shape is what turns a handful of bounces (Rabi oscillation) into clean, one-way decay. See it live in the spectral density panel above.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="notes" style="margin-top:30px;">
+  <h2>The quantum picture — a two-level atom, decaying</h2>
+  <p style="color:var(--ink-dim); font-size:13.5px; max-width:80ch; margin:-6px 0 18px;">Swap the pendulum for a two-level atom — ground state |g⟩, excited state |e⟩ — and the spring for the dipole coupling that lets it emit a photon into the vacuum. Under the rotating-wave approximation, the excited-state amplitude obeys an equation of exactly the same "one thing linearly coupled to many things" shape as the pendulum above — just complex-valued and first order instead of real and second order. It runs on the very same N, spread, and coupling sliders from the apparatus panel: nothing new to tune, just a different physical costume for the same mathematics.</p>
+
+  <div class="grid2">
+    <div class="card chart-card">
+      <p class="panel-title">Two-level atom</p>
+      <canvas id="atomLevels" class="diag-canvas" style="height:180px;"></canvas>
+      <div class="readouts readouts-3col">
+        <div class="ro"><div class="ro-label">Excited |e⟩</div><div class="ro-val" id="roPopE" style="color:var(--violet-hi);">100.0%</div></div>
+        <div class="ro"><div class="ro-label">Ground |g⟩</div><div class="ro-val" id="roPopG">0.0%</div></div>
+        <div class="ro"><div class="ro-label">Coherence |ρₑ,g|</div><div class="ro-val" id="roCoherence" style="color:#e8a0b4;">50.0%</div></div>
+        <div class="ro"><div class="ro-label">T₁ — relaxation (1/Γ)</div><div class="ro-val" id="roT1" style="color:var(--violet-hi);">—</div></div>
+        <div class="ro"><div class="ro-label">T₂ — decoherence (2/Γ)</div><div class="ro-val" id="roT2" style="color:#e8a0b4;">—</div></div>
+        <div class="ro"><div class="ro-label">Markov rate Γ</div><div class="ro-val" id="roGammaMarkov">—</div></div>
+      </div>
+      <p class="hint" style="margin-top:8px;">T₁, T₂: the standard vocabulary from qubit and NMR physics — how long population and coherence survive, in periods. T₂ = 2T₁ here because decoherence has no source but the decay itself (Part "Before and after," below).</p>
+    </div>
+    <div class="card chart-card">
+      <p class="panel-title">Population vs. coherence — exact vs. Markov-approximated</p>
+      <div class="legend">
+        <div class="legend-item"><span class="swatch" style="background:var(--violet);"></span>Population |c<sub>e</sub>|² (exact)</div>
+        <div class="legend-item"><span class="swatch" style="background:#e8a0b4;"></span>Coherence |ρ<sub>e,g</sub>| (exact)</div>
+        <div class="legend-item"><span class="swatch" style="background:var(--ink-faint);"></span>Markov e<sup>−Γt</sup></div>
+        <div class="spacer"></div>
+        <button class="btn" id="atomLogToggle" style="padding:4px 10px;font-size:11px;">Log scale: Off</button>
+      </div>
+      <canvas id="atomChart" class="atom-chart"></canvas>
+      <p class="chart-foot">Violet = population, decaying as e<sup>−Γt</sup>. Rose = coherence — starting the atom in a 50/50 superposition (|e⟩+|g⟩)/√2 and tracking |ρ<sub>e,g</sub>| = ½|c<sub>e</sub>(t)|, exactly, at every N. It decays as e<sup>−Γt/2</sup> — <b>half the rate</b> of the population. That's decoherence: the same photon leaking away that costs the atom its energy also costs it its ability to interfere.</p>
+    </div>
+  </div>
+
+  <div class="card chart-card" style="margin-top:16px;">
+    <p class="panel-title">Bloch vector — a wave losing its "waviness" and becoming a classical fact</p>
+    <div class="grid2" style="align-items:start;">
+      <div>
+        <canvas id="blochCanvas" class="diag-canvas" style="height:250px;"></canvas>
+      </div>
+      <div>
+        <div class="readouts" style="grid-template-columns:1fr; margin-top:0;">
+          <div class="ro"><div class="ro-label">Purity |r| — 100% = still a genuine wave, 0% = fully classical mixture</div><div class="ro-val" id="roPurity" style="color:#e8a0b4;">100.0%</div></div>
+        </div>
+        <p class="chart-foot" style="margin-top:12px;">Start the atom in a 50/50 superposition and its Bloch vector begins on the equator — length 1, a fully "quantum" state that can still interfere with itself. As the photon leaks out, the vector both <b>tips toward |g⟩</b> (it's relaxing) and, for a while, <b>shrinks toward the centre</b> (it's decohering — the field now secretly "knows" whether the photon left, which is exactly the which-path information that destroys interference). Watch the purity readout dip below 100% and climb back up: once relaxation is essentially complete, the outcome stops being in doubt, and the atom ends up in a <em>definite</em>, classical state — |g⟩ — which is why the vector regrows to length 1 at the pole instead of staying shrunk. The dip in between <em>is</em> the wave-to-classical transition; the pole at the end is what "classical" looks like once it's finished.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <h3>Before and after the Markov approximation</h3>
+    <p><b>Before:</b> the exact equation for the excited amplitude has memory — c<sub>e</sub>(t) depends on its whole past through a memory kernel built from every mode's accumulated phase. With few modes (send N up in the apparatus panel to 1 or 2) this shows up as real physics: Rabi-like oscillation and partial revivals, not decay. Even with many modes, the very first instant is special: since every mode starts empty, c<sub>k</sub>(0)=0, the population's initial rate of change is exactly zero — decay begins <em>quadratically</em>, not linearly, a signature of the quantum Zeno effect that's easy to miss unless you zoom in on the first few percent.</p>
+    <p style="margin-top:10px;"><b>After:</b> assume the bath is smooth and broadband enough that its memory kernel decays effectively instantly compared to the atom's own dynamics — the Markov approximation — and the memory integral collapses to a single number, the Fermi Golden Rule rate Γ = πκ²⁄(4·Δω/ω₀). The exact equation is then replaced by ċ<sub>e</sub> = −(Γ/2)c<sub>e</sub>, giving |c<sub>e</sub>(t)|² = e<sup>−Γt</sup>: clean, memoryless, monotonic decay — the quantum sibling of preset ④ on the pendulum above, and the starting point for the Lindblad master equations used throughout open quantum systems theory.</p>
+    <p style="margin-top:10px;"><b>Decoherence, specifically:</b> population decay (how much energy is left) and coherence decay (how much of the atom's ability to interfere is left) are related but different things — and this model gets both exactly. Start the atom in a superposition α|e⟩+β|g⟩ instead of pure |e⟩, and the |g,0⟩ branch just sits there untouched (it's a zero-energy eigenstate), while the |e,0⟩ branch decays exactly as before. Tracing out the field gives the reduced coherence ρ<sub>e,g</sub>(t) = αβ*c<sub>e</sub>(t) — <em>exactly</em>, not approximately, for any N. Since population goes as |c<sub>e</sub>|² and coherence goes as |c<sub>e</sub>|, coherence always decays at exactly half the population's rate: T₂ = 2T₁, whenever decoherence has no source but the decay itself. That's the specific, exactly-solvable case shown here — real atoms often decohere faster still, from extra "pure dephasing" this model doesn't include.</p>
+  </div>
+</div>
+
+<footer>Coupled linear oscillators, integrated with 4th-order Runge–Kutta. Presets ①–③ conserve total mechanical energy exactly; preset ④ integrates the exact dissipative continuum limit instead. The quantum atom's exact dynamics conserves total probability exactly; its Markov trace uses the Fermi Golden Rule rate derived from the same N, spread, and coupling.<br>Built by Muhammad Daniyal Chundrigar.</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const OMEGA0 = 1;
+  const AMP0 = 0.5;
+  const DT = 0.02;
+  const BASE_SUBSTEPS = 5;
+  const GAIN_SYS = 1;
+  const GAIN_ENV = 4;
+  const MAX_VIS_ANGLE = 1.35;
+
+  const sim = {
+    N:1, spread:0, kappaTotal:0.14, gamma:0.05, temperature:0, speed:1, playing:true, infiniteMode:false,
+    theta:[], vel:[], omega:[], kappa:[], t:0, E0:1,
+    history:{t:[],sys:[],th0:[],v0:[]}, trail:[]
+  };
+
+  const presets = [
+    {N:1,   spread:0.00, kappa:0.14, gamma:0.05, temperature:0, infinite:false},
+    {N:2,   spread:0.15, kappa:0.14, gamma:0.05, temperature:0, infinite:false},
+    {N:40,  spread:0.60, kappa:0.14, gamma:0.05, temperature:0, infinite:false},
+    {N:80,  spread:0.90, kappa:0.14, gamma:0.05, temperature:0, infinite:true}
+  ];
+
+  function gaussianRandom(){
+    let u=0, v=0;
+    while(u===0) u = Math.random();
+    while(v===0) v = Math.random();
+    return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  }
+
+  // ---------- physics ----------
+  function computeOmegaArray(){
+    sim.omega = [];
+    for(let i=0;i<sim.N;i++){
+      let frac;
+      if(sim.N===1) frac = 0;
+      else frac = (i/(sim.N-1))*2 - 1;
+      sim.omega.push(OMEGA0*(1+sim.spread*frac));
+    }
+  }
+  function computeKappaArray(){
+    const kp = sim.N>0 ? sim.kappaTotal/Math.sqrt(sim.N) : 0;
+    sim.kappa = new Array(sim.N).fill(kp);
+  }
+  function resetSim(fullReinit){
+    if(fullReinit){ computeOmegaArray(); computeKappaArray(); }
+    sim.theta = new Array(sim.N+1).fill(0);
+    sim.vel = new Array(sim.N+1).fill(0);
+    sim.theta[0] = AMP0;
+    sim.t = 0;
+    sim.history = {t:[], sys:[], th0:[], v0:[]};
+    sim.trail = [];
+    sim.E0 = sim.infiniteMode
+      ? 0.5*OMEGA0*OMEGA0*sim.theta[0]*sim.theta[0]
+      : energies().total;
+    atomReset();
+  }
+  function accel(theta, vel){
+    const n = theta.length;
+    const acc = new Array(n);
+    if(sim.infiniteMode){
+      // exact continuum limit: the system radiates via friction alone —
+      // no term here depends on the bath, so nothing can ever feed back.
+      acc[0] = -OMEGA0*OMEGA0*theta[0] - sim.gamma*vel[0];
+      for(let i=1;i<n;i++){
+        const w = sim.omega[i-1];
+        acc[i] = -w*w*theta[i] + sim.kappa[i-1]*theta[0]; // one-way: driven by the system, no back-reaction
+      }
+    } else {
+      let coup0 = 0;
+      for(let i=1;i<n;i++) coup0 += sim.kappa[i-1]*(theta[i]-theta[0]);
+      acc[0] = -OMEGA0*OMEGA0*theta[0] + coup0;
+      for(let i=1;i<n;i++){
+        const w = sim.omega[i-1];
+        acc[i] = -w*w*theta[i] - sim.kappa[i-1]*(theta[i]-theta[0]);
+      }
+    }
+    return acc;
+  }
+  function rk4Step(dt){
+    const theta = sim.theta, vel = sim.vel, n = theta.length;
+    const a1 = accel(theta, vel);
+    const t2 = new Array(n), v2 = new Array(n);
+    for(let i=0;i<n;i++){ t2[i]=theta[i]+dt/2*vel[i]; v2[i]=vel[i]+dt/2*a1[i]; }
+    const a2 = accel(t2, v2);
+    const t3 = new Array(n), v3 = new Array(n);
+    for(let i=0;i<n;i++){ t3[i]=theta[i]+dt/2*v2[i]; v3[i]=vel[i]+dt/2*a2[i]; }
+    const a3 = accel(t3, v3);
+    const t4 = new Array(n), v4 = new Array(n);
+    for(let i=0;i<n;i++){ t4[i]=theta[i]+dt*v3[i]; v4[i]=vel[i]+dt*a3[i]; }
+    const a4 = accel(t4, v4);
+    for(let i=0;i<n;i++){
+      sim.theta[i] = theta[i] + dt/6*(vel[i] + 2*v2[i] + 2*v3[i] + v4[i]);
+      sim.vel[i]   = vel[i]   + dt/6*(a1[i]  + 2*a2[i]  + 2*a3[i]  + a4[i]);
+    }
+    sim.t += dt;
+  }
+  function energies(){
+    const theta = sim.theta, vel = sim.vel;
+    const eSys = 0.5*vel[0]*vel[0] + 0.5*OMEGA0*OMEGA0*theta[0]*theta[0];
+    let eBath = 0, eCoup = 0;
+    for(let i=1;i<theta.length;i++){
+      const w = sim.omega[i-1];
+      eBath += 0.5*vel[i]*vel[i] + 0.5*w*w*theta[i]*theta[i];
+      eCoup += 0.5*sim.kappa[i-1]*Math.pow(theta[i]-theta[0],2);
+    }
+    return {eSys, eBath, eCoup, total:eSys+eBath+eCoup};
+  }
+  function perBobEnergy(i){
+    const w = sim.omega[i-1];
+    return 0.5*sim.vel[i]*sim.vel[i] + 0.5*w*w*sim.theta[i]*sim.theta[i];
+  }
+
+  // ---------- quantum atom: exact (before Markov) ----------
+  // Star-graph Schrodinger equation for a two-level atom coupled to N field modes
+  // (Wigner-Weisskopf, single-excitation subspace, rotating frame at the atomic frequency):
+  //   i q0' = sum_i g_i q_i         (q0 = amplitude for atom excited, field vacuum)
+  //   i qi' = delta_i qi + g_i q0   (qi = amplitude for atom ground, one photon in mode i)
+  // g_i is the RWA-rescaled coupling (kappa_i / 2*OMEGA0), delta_i = omega_i - OMEGA0.
+  // This is exactly the classical star-coupling equation, just complex and first order.
+  const atom = { qRe:[1], qIm:[0], t:0, history:{t:[],pop:[],coh:[]}, bloch:{x:[],y:[],z:[]} };
+
+  function atomReset(){
+    atom.qRe = new Array(sim.N+1).fill(0);
+    atom.qIm = new Array(sim.N+1).fill(0);
+    atom.qRe[0] = 1;
+    atom.t = 0;
+    atom.history = {t:[], pop:[], coh:[]};
+    atom.bloch = {x:[], y:[], z:[]};
+  }
+  function atomDeriv(qRe, qIm){
+    const n = qRe.length;
+    const dRe = new Array(n), dIm = new Array(n);
+    let sRe=0, sIm=0;
+    for(let i=1;i<n;i++){
+      const g = sim.kappa[i-1]/(2*OMEGA0);
+      sRe += g*qRe[i]; sIm += g*qIm[i];
+    }
+    dRe[0] = sIm; dIm[0] = -sRe;
+    for(let i=1;i<n;i++){
+      const g = sim.kappa[i-1]/(2*OMEGA0);
+      const delta = sim.omega[i-1]-OMEGA0;
+      dRe[i] = delta*qIm[i] + g*qIm[0];
+      dIm[i] = -delta*qRe[i] - g*qRe[0];
+    }
+    return {dRe, dIm};
+  }
+  function atomStep(dt){
+    const n = atom.qRe.length;
+    const qRe = atom.qRe, qIm = atom.qIm;
+    const d1 = atomDeriv(qRe, qIm);
+    const r2=new Array(n), i2=new Array(n);
+    for(let k=0;k<n;k++){ r2[k]=qRe[k]+dt/2*d1.dRe[k]; i2[k]=qIm[k]+dt/2*d1.dIm[k]; }
+    const d2 = atomDeriv(r2,i2);
+    const r3=new Array(n), i3=new Array(n);
+    for(let k=0;k<n;k++){ r3[k]=qRe[k]+dt/2*d2.dRe[k]; i3[k]=qIm[k]+dt/2*d2.dIm[k]; }
+    const d3 = atomDeriv(r3,i3);
+    const r4=new Array(n), i4=new Array(n);
+    for(let k=0;k<n;k++){ r4[k]=qRe[k]+dt*d3.dRe[k]; i4[k]=qIm[k]+dt*d3.dIm[k]; }
+    const d4 = atomDeriv(r4,i4);
+    for(let k=0;k<n;k++){
+      atom.qRe[k] = qRe[k] + dt/6*(d1.dRe[k]+2*d2.dRe[k]+2*d3.dRe[k]+d4.dRe[k]);
+      atom.qIm[k] = qIm[k] + dt/6*(d1.dIm[k]+2*d2.dIm[k]+2*d3.dIm[k]+d4.dIm[k]);
+    }
+    atom.t += dt;
+  }
+  // Fermi Golden Rule rate, derived from the same N/spread/kappa driving the pendulum bath:
+  // g = kappaTotal/(2*OMEGA0*sqrt(N)), density of states rho = N/(2*spread*OMEGA0),
+  // Gamma = 2*pi*g^2*rho = pi*kappaTotal^2 / (4*spread*OMEGA0^3)  — verified numerically.
+  function gammaMarkov(){
+    const sp = Math.max(sim.spread, 1e-4);
+    return Math.PI*sim.kappaTotal*sim.kappaTotal/(4*sp*OMEGA0*OMEGA0*OMEGA0);
+  }
+
+  // ---------- DOM ----------
+  const el = id => document.getElementById(id);
+  const sceneCanvas = el('scene'), chartCanvas = el('chart');
+  const sceneCtx = sceneCanvas.getContext('2d'), chartCtx = chartCanvas.getContext('2d');
+  const phaseCanvas = el('phaseCanvas'), spectrumCanvas = el('spectrumCanvas');
+  const phaseCtx = phaseCanvas.getContext('2d'), spectrumCtx = spectrumCanvas.getContext('2d');
+  const atomLevelsCanvas = el('atomLevels'), atomChartCanvas = el('atomChart');
+  const atomLevelsCtx = atomLevelsCanvas.getContext('2d'), atomChartCtx = atomChartCanvas.getContext('2d');
+  const blochCanvas = el('blochCanvas'), blochCtx = blochCanvas.getContext('2d');
+  const roPurity = el('roPurity');
+  const roPopE = el('roPopE'), roPopG = el('roPopG'), roGammaMarkov = el('roGammaMarkov'), roCoherence = el('roCoherence'), roT1 = el('roT1'), roT2 = el('roT2');
+  const atomLogToggle = el('atomLogToggle');
+  let atomChartLog = false;
+  const playBtn = el('playBtn'), resetBtn = el('resetBtn');
+  const sliderN = el('sliderN'), sliderSpread = el('sliderSpread'), sliderKappa = el('sliderKappa'), sliderSpeed = el('sliderSpeed'), sliderGamma = el('sliderGamma'), sliderTemp = el('sliderTemp');
+  const labelN = el('labelN'), labelSpread = el('labelSpread'), labelKappa = el('labelKappa'), labelSpeed = el('labelSpeed'), labelGamma = el('labelGamma'), labelTemp = el('labelTemp');
+  const gammaField = el('gammaField');
+  const logToggle = el('logToggle');
+  let chartLog = false;
+  const roSys = el('roSys'), roEnv = el('roEnv'), roPeriods = el('roPeriods'), roRevival = el('roRevival');
+  const degenWarn = el('degenWarn');
+  const infiniteNote = el('infiniteNote');
+  const presetBtns = Array.from(document.querySelectorAll('.preset-btn'));
+
+  let hatchPattern = null;
+  function buildHatchPattern(){
+    const pc = document.createElement('canvas'); pc.width = 10; pc.height = 10;
+    const pctx = pc.getContext('2d');
+    pctx.fillStyle = '#0f2540'; pctx.fillRect(0,0,10,10);
+    pctx.strokeStyle = 'rgba(159,180,199,0.55)';
+    pctx.lineWidth = 1.4;
+    pctx.beginPath();
+    pctx.moveTo(-2,10); pctx.lineTo(10,-2);
+    pctx.moveTo(0,14); pctx.lineTo(14,0);
+    pctx.stroke();
+    hatchPattern = sceneCtx.createPattern(pc, 'repeat');
+  }
+
+  function setupCanvas(canvas, ctx){
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.max(1, Math.round(rect.width*dpr));
+    canvas.height = Math.max(1, Math.round(rect.height*dpr));
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    return {w:rect.width, h:rect.height};
+  }
+
+  function drawSpring(ctx,x0,x1,y,amp,coils){
+    ctx.beginPath();
+    ctx.moveTo(x0,y);
+    const span = x1-x0;
+    const seg = span/coils;
+    for(let i=0;i<coils;i++){
+      const xa = x0 + seg*i + seg*0.5;
+      ctx.lineTo(xa, y + (i%2===0? -amp: amp));
+    }
+    ctx.lineTo(x1,y);
+    ctx.stroke();
+  }
+
+  function drawScene(){
+    if(!hatchPattern) buildHatchPattern();
+    const {w,h} = setupCanvas(sceneCanvas, sceneCtx);
+    const ctx = sceneCtx;
+    ctx.clearRect(0,0,w,h);
+
+    const barY = 46, barH = 13;
+    const sysX0 = 24, sysX1 = 118;
+    const springX0 = sysX1, springX1 = sysX1+58;
+    const envX0 = springX1, envX1 = w-22;
+
+    // bar segments
+    ctx.fillStyle = hatchPattern;
+    ctx.strokeStyle = 'rgba(234,241,247,0.35)';
+    ctx.lineWidth = 1;
+    ctx.fillRect(sysX0, barY, sysX1-sysX0, barH);
+    ctx.strokeRect(sysX0, barY, sysX1-sysX0, barH);
+    ctx.fillRect(envX0, barY, envX1-envX0, barH);
+    ctx.strokeRect(envX0, barY, envX1-envX0, barH);
+
+    // spring
+    ctx.strokeStyle = 'rgba(209,162,74,0.85)';
+    ctx.lineWidth = 1.6;
+    drawSpring(ctx, springX0, springX1, barY+barH/2, 7, 6);
+
+    const sysPivotX = sysX0 + (sysX1-sysX0)*0.62;
+    const pivotY = barY+barH;
+    const LEN_MIN_MULT = 0.55, LEN_MAX_MULT = 1.7;
+    const available = h - pivotY - 74;
+    const Lpx = Math.max(50, Math.min(200, available / LEN_MAX_MULT));
+
+    const N = sim.N;
+    const drawCount = sim.infiniteMode ? Math.min(N, 26) : N;
+    const dotsReserve = sim.infiniteMode ? 84 : 0;
+    const envRight = envX1 - dotsReserve;
+    const envPivots = [];
+    if(drawCount===1){
+      envPivots.push((envX0+envRight)/2);
+    } else {
+      const margin = 22;
+      const usable = (envRight-envX0-2*margin);
+      for(let i=0;i<drawCount;i++) envPivots.push(envX0+margin + usable*(i/(drawCount-1)));
+    }
+    const spacing = drawCount>1 ? envPivots[1]-envPivots[0] : 40;
+    const bobR = Math.max(2.5, Math.min(9, spacing*0.32));
+
+    // environment strings + bobs -- pendulum length encodes natural frequency:
+    // L = g/omega^2, so shorter = faster (higher omega), longer = slower (lower omega),
+    // clamped to a sane visual range so the spread stays legible on screen.
+    let maxLenUsed = Lpx;
+    for(let i=1;i<=drawCount;i++){
+      const px = envPivots[i-1];
+      const wi = sim.omega[i-1];
+      const Li = clamp(Lpx/(wi*wi), Lpx*LEN_MIN_MULT, Lpx*LEN_MAX_MULT);
+      if(Li>maxLenUsed) maxLenUsed = Li;
+      const th = clamp(sim.theta[i]*GAIN_ENV, -MAX_VIS_ANGLE, MAX_VIS_ANGLE);
+      const bx = px + Li*Math.sin(th);
+      const by = pivotY + Li*Math.cos(th);
+      ctx.strokeStyle = 'rgba(159,180,199,0.28)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(px,pivotY); ctx.lineTo(bx,by); ctx.stroke();
+
+      const eFrac = clamp(Math.sqrt(perBobEnergy(i)/Math.max(sim.E0,1e-9))*3.2, 0, 1);
+      const r = bobR*(0.85+0.5*eFrac);
+      ctx.beginPath();
+      ctx.arc(bx,by,r,0,Math.PI*2);
+      const glow = eFrac>0.12;
+      if(glow){ ctx.shadowColor='rgba(95,165,120,0.9)'; ctx.shadowBlur = 10*eFrac; }
+      ctx.fillStyle = `rgba(95,165,120,${0.45+0.55*eFrac})`;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = 'rgba(20,40,30,0.6)'; ctx.lineWidth=1; ctx.stroke();
+    }
+
+    // ellipsis standing in for the infinitely many pendulums we can't draw
+    if(sim.infiniteMode && envPivots.length){
+      let dx = envPivots[envPivots.length-1] + Math.max(14, spacing);
+      for(let d=0; d<4; d++){
+        const a = 0.42 - d*0.09;
+        if(a<=0 || dx>envX1-6) break;
+        ctx.strokeStyle = `rgba(159,180,199,${a*0.6})`;
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.moveTo(dx,pivotY); ctx.lineTo(dx,pivotY+Lpx); ctx.stroke();
+        ctx.beginPath(); ctx.arc(dx, pivotY+Lpx, Math.max(1.6, bobR*(0.7-d*0.12)), 0, Math.PI*2);
+        ctx.fillStyle = `rgba(95,165,120,${a})`;
+        ctx.fill();
+        dx += Math.max(11, spacing*0.55);
+      }
+    }
+
+    // system trail
+    const trail = sim.trail;
+    for(let j=0;j<trail.length;j++){
+      const age = trail.length-1-j;
+      const th = clamp(trail[j]*GAIN_SYS, -MAX_VIS_ANGLE, MAX_VIS_ANGLE);
+      const bx = sysPivotX + Lpx*Math.sin(th);
+      const by = pivotY + Lpx*Math.cos(th);
+      const a = Math.max(0, 0.28 - age*0.045);
+      if(a<=0) continue;
+      ctx.strokeStyle = `rgba(205,217,226,${a})`;
+      ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(sysPivotX,pivotY); ctx.lineTo(bx,by); ctx.stroke();
+      ctx.beginPath(); ctx.arc(bx,by,7,0,Math.PI*2);
+      ctx.fillStyle = `rgba(205,217,226,${a*0.9})`; ctx.fill();
+    }
+    // system live bob
+    {
+      const th = clamp(sim.theta[0]*GAIN_SYS, -MAX_VIS_ANGLE, MAX_VIS_ANGLE);
+      const bx = sysPivotX + Lpx*Math.sin(th);
+      const by = pivotY + Lpx*Math.cos(th);
+      ctx.strokeStyle = 'rgba(234,241,247,0.6)'; ctx.lineWidth=1.3;
+      ctx.beginPath(); ctx.moveTo(sysPivotX,pivotY); ctx.lineTo(bx,by); ctx.stroke();
+      const grad = ctx.createRadialGradient(bx-3,by-3,1,bx,by,10);
+      grad.addColorStop(0,'#f3f7fa'); grad.addColorStop(1,'#aebcc8');
+      ctx.beginPath(); ctx.arc(bx,by,9,0,Math.PI*2);
+      ctx.fillStyle = grad; ctx.fill();
+      ctx.strokeStyle='rgba(20,30,40,0.6)'; ctx.lineWidth=1; ctx.stroke();
+    }
+
+    // labels
+    ctx.font = "italic 20px 'Source Serif 4', serif";
+    ctx.fillStyle = 'rgba(234,241,247,0.85)';
+    ctx.textAlign='center';
+    ctx.fillText('\u03C9\u2080', sysPivotX, pivotY+Lpx+34);
+
+    ctx.font = "600 13px 'IBM Plex Sans', sans-serif";
+    ctx.fillStyle = 'rgba(205,217,226,0.9)';
+    ctx.fillText('System', sysPivotX, pivotY+maxLenUsed+56);
+
+    ctx.fillStyle = 'rgba(95,165,120,0.95)';
+    ctx.fillText(sim.infiniteMode ? 'Environment  (N \u2192 \u221E)' : 'Environment', (envX0+envX1)/2, pivotY+maxLenUsed+56);
+  }
+
+  function clamp(v,lo,hi){ return Math.max(lo,Math.min(hi,v)); }
+
+  function drawChart(){
+    const {w,h} = setupCanvas(chartCanvas, chartCtx);
+    const ctx = chartCtx;
+    ctx.clearRect(0,0,w,h);
+    const padL=34, padR=10, padT=10, padB=20;
+    const plotW = w-padL-padR, plotH = h-padT-padB;
+    const LOG_FLOOR = 0.05;
+
+    const gridVals = chartLog ? [0.1,1,10,100] : [0,25,50,75,100];
+    function yOf(v){
+      if(chartLog){
+        const vv = Math.max(v, LOG_FLOOR);
+        const lo = Math.log10(LOG_FLOOR), hi = Math.log10(100);
+        const t = (Math.log10(vv)-lo)/(hi-lo);
+        return padT + plotH*(1-t);
+      }
+      return padT + plotH*(1-clamp(v,0,100)/100);
+    }
+
+    // grid
+    ctx.strokeStyle = 'rgba(44,74,102,0.6)';
+    ctx.lineWidth = 1;
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(159,180,199,0.8)';
+    ctx.textAlign='right';
+    gridVals.forEach(v=>{
+      const y = yOf(v);
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+      ctx.fillText((v<1?v:Math.round(v))+'%', padL-6, y+3);
+    });
+
+    const ts = sim.history.t, ys = sim.history.sys;
+    if(ts.length<2) return;
+    const tMin = ts[0], tMax = ts[ts.length-1];
+    const xOf = t => padL + (tMax>tMin ? (t-tMin)/(tMax-tMin) : 0)*plotW;
+
+    if(!chartLog){
+      // fills (linear mode only — a log-space fill to zero is undefined)
+      ctx.beginPath();
+      ctx.moveTo(xOf(ts[0]), padT+plotH);
+      for(let i=0;i<ts.length;i++) ctx.lineTo(xOf(ts[i]), yOf(ys[i]));
+      ctx.lineTo(xOf(ts[ts.length-1]), padT+plotH);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(127,216,211,0.16)';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(xOf(ts[0]), padT);
+      for(let i=0;i<ts.length;i++) ctx.lineTo(xOf(ts[i]), yOf(ys[i]));
+      ctx.lineTo(xOf(ts[ts.length-1]), padT);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(95,165,120,0.16)';
+      ctx.fill();
+    }
+
+    // curve
+    ctx.beginPath();
+    for(let i=0;i<ts.length;i++){
+      const x=xOf(ts[i]), y=yOf(ys[i]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = '#7fd8d3';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    // theoretical zero-temperature reference: 100·e^(-γt)
+    if(sim.infiniteMode){
+      ctx.beginPath();
+      ctx.setLineDash([5,4]);
+      ctx.strokeStyle = 'rgba(234,241,247,0.6)';
+      ctx.lineWidth = 1.3;
+      for(let i=0;i<ts.length;i++){
+        const refV = 100*Math.exp(-sim.gamma*ts[i]);
+        const x=xOf(ts[i]), y=yOf(refV);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  function drawPhase(){
+    const {w,h} = setupCanvas(phaseCanvas, phaseCtx);
+    const ctx = phaseCtx;
+    ctx.clearRect(0,0,w,h);
+    const pad=30;
+    const plotW=w-2*pad, plotH=h-2*pad;
+    const R = 0.62;
+    const xOf = th => pad + plotW*((clamp(th,-R,R)+R)/(2*R));
+    const yOf = v => pad + plotH*(1-(clamp(v,-R,R)+R)/(2*R));
+
+    ctx.strokeStyle='rgba(44,74,102,0.6)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(xOf(-R),yOf(0)); ctx.lineTo(xOf(R),yOf(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xOf(0),yOf(-R)); ctx.lineTo(xOf(0),yOf(R)); ctx.stroke();
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(159,180,199,0.75)';
+    ctx.textAlign='center'; ctx.fillText('θ', xOf(R)-8, yOf(0)-8);
+    ctx.textAlign='left'; ctx.fillText('dθ/dt', xOf(0)+6, yOf(R)+11);
+
+    const th0s = sim.history.th0, v0s = sim.history.v0;
+    if(th0s.length>1){
+      const n = th0s.length;
+      for(let i=1;i<n;i++){
+        const a = i/n;
+        ctx.strokeStyle = `rgba(127,216,211,${0.06+0.55*a})`;
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(xOf(th0s[i-1]), yOf(v0s[i-1]));
+        ctx.lineTo(xOf(th0s[i]), yOf(v0s[i]));
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(xOf(th0s[n-1]), yOf(v0s[n-1]), 4, 0, Math.PI*2);
+      ctx.fillStyle = '#f3f7fa';
+      ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(xOf(0),yOf(0),2.5,0,Math.PI*2);
+    ctx.fillStyle = 'rgba(209,162,74,0.9)'; ctx.fill();
+  }
+
+  function drawSpectrum(){
+    const {w,h} = setupCanvas(spectrumCanvas, spectrumCtx);
+    const ctx = spectrumCtx;
+    ctx.clearRect(0,0,w,h);
+    const padL=38, padR=12, padT=12, padB=26;
+    const plotW=w-padL-padR, plotH=h-padT-padB;
+    const N = sim.N;
+    if(N<1 || sim.omega.length<1) return;
+
+    let wMin=Infinity, wMax=-Infinity;
+    for(let i=0;i<N;i++){ wMin=Math.min(wMin,sim.omega[i]); wMax=Math.max(wMax,sim.omega[i]); }
+    if(!isFinite(wMin) || wMin===wMax){ wMin=OMEGA0-0.15; wMax=OMEGA0+0.15; }
+
+    const bins = 36;
+    const sums = new Array(bins).fill(0);
+    for(let i=1;i<=N;i++){
+      const wv = sim.omega[i-1];
+      let bIdx = Math.floor((wv-wMin)/(wMax-wMin)*bins);
+      bIdx = clamp(bIdx,0,bins-1);
+      sums[bIdx] += perBobEnergy(i);
+    }
+    let maxE=1e-9;
+    for(let b=0;b<bins;b++) maxE=Math.max(maxE,sums[b]);
+
+    ctx.strokeStyle='rgba(44,74,102,0.6)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,padT+plotH); ctx.lineTo(padL+plotW,padT+plotH); ctx.stroke();
+
+    // J(omega): the coupling you dialed in is uniform per mode (kappa_i = kappa/sqrt(N)),
+    // so the input spectral density is flat across the coupled band -- draw it as a
+    // reference line, distinct from the peaked (Lorentzian) *outcome* below.
+    const jLineY = padT + plotH*0.80;
+    ctx.setLineDash([3,3]);
+    ctx.strokeStyle = 'rgba(127,216,211,0.55)'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(padL, jLineY); ctx.lineTo(padL+plotW, jLineY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    const barW = plotW/bins;
+    for(let b=0;b<bins;b++){
+      const hgt = plotH*(sums[b]/maxE);
+      const x = padL+b*barW, y = padT+plotH-hgt;
+      ctx.fillStyle='rgba(95,165,120,0.75)';
+      ctx.fillRect(x+1,y,Math.max(1,barW-2),hgt);
+    }
+    ctx.font="9.5px 'IBM Plex Mono',monospace";
+    ctx.fillStyle='rgba(127,216,211,0.85)'; ctx.textAlign='left';
+    ctx.fillText('J(ω) — coupling dialed in (flat)', padL+2, jLineY-5);
+    ctx.fillStyle='rgba(95,165,120,0.95)'; ctx.textAlign='right';
+    ctx.fillText('energy absorbed (peaked)', padL+plotW-2, padT+11);
+
+    if(OMEGA0>=wMin && OMEGA0<=wMax){
+      const xw0 = padL + plotW*((OMEGA0-wMin)/(wMax-wMin));
+      ctx.setLineDash([4,3]);
+      ctx.strokeStyle='rgba(209,162,74,0.9)'; ctx.lineWidth=1.3;
+      ctx.beginPath(); ctx.moveTo(xw0,padT); ctx.lineTo(xw0,padT+plotH); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font="10px 'IBM Plex Mono',monospace"; ctx.fillStyle='rgba(209,162,74,0.9)';
+      ctx.textAlign='center'; ctx.fillText('ω₀', xw0, padT+plotH+15);
+    }
+    ctx.font="10px 'IBM Plex Mono',monospace"; ctx.fillStyle='rgba(159,180,199,0.7)';
+    ctx.textAlign='left'; ctx.fillText(wMin.toFixed(2), padL, padT+plotH+15);
+    ctx.textAlign='right'; ctx.fillText(wMax.toFixed(2), padL+plotW, padT+plotH+15);
+  }
+
+  function drawAtomLevels(){
+    const {w,h} = setupCanvas(atomLevelsCanvas, atomLevelsCtx);
+    const ctx = atomLevelsCtx;
+    ctx.clearRect(0,0,w,h);
+    const pad = 24;
+    const eY = pad+16, gY = h-pad-16;
+    const x0 = pad+12, x1 = w-pad-12;
+    const pop = atom.qRe[0]*atom.qRe[0] + atom.qIm[0]*atom.qIm[0];
+    const ground = clamp(1-pop, 0, 1);
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(180,143,214,0.55)';
+    ctx.beginPath(); ctx.moveTo(x0,eY); ctx.lineTo(x1,eY); ctx.stroke();
+    ctx.strokeStyle = 'rgba(205,217,226,0.5)';
+    ctx.beginPath(); ctx.moveTo(x0,gY); ctx.lineTo(x1,gY); ctx.stroke();
+
+    ctx.setLineDash([3,3]);
+    ctx.strokeStyle = 'rgba(159,180,199,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x0+16,eY); ctx.lineTo(x0+16,gY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.font = "italic 15px 'Source Serif 4', serif";
+    ctx.textAlign='left';
+    ctx.fillStyle = 'rgba(203,176,230,0.95)';
+    ctx.fillText('|e\u27E9', x0-2, eY-10);
+    ctx.fillStyle = 'rgba(205,217,226,0.9)';
+    ctx.fillText('|g\u27E9', x0-2, gY+24);
+    ctx.font = "10px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(159,180,199,0.7)';
+    ctx.textAlign='left';
+    ctx.fillText('\u0127\u03C9\u2090', x0+22, (eY+gY)/2+4);
+
+    const markerX = x0 + (x1-x0)*0.74;
+    const eAlpha = 0.18+0.8*pop;
+    ctx.beginPath(); ctx.arc(markerX, eY, 11, 0, Math.PI*2);
+    ctx.shadowColor='rgba(180,143,214,0.9)'; ctx.shadowBlur = 14*pop;
+    ctx.fillStyle = `rgba(180,143,214,${eAlpha})`;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle='rgba(90,60,120,0.6)'; ctx.lineWidth=1; ctx.stroke();
+
+    const gAlpha = 0.18+0.8*ground;
+    ctx.beginPath(); ctx.arc(markerX, gY, 11, 0, Math.PI*2);
+    ctx.shadowColor='rgba(205,217,226,0.8)'; ctx.shadowBlur = 10*ground;
+    ctx.fillStyle = `rgba(205,217,226,${gAlpha})`;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle='rgba(40,50,60,0.6)'; ctx.lineWidth=1; ctx.stroke();
+
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.textAlign='center';
+    ctx.fillStyle = 'rgba(234,241,247,0.85)';
+    ctx.fillText((pop*100).toFixed(0)+'%', markerX, eY-18);
+    ctx.fillText((ground*100).toFixed(0)+'%', markerX, gY-18);
+  }
+
+  function drawAtomChart(){
+    const {w,h} = setupCanvas(atomChartCanvas, atomChartCtx);
+    const ctx = atomChartCtx;
+    ctx.clearRect(0,0,w,h);
+    const padL=34, padR=10, padT=10, padB=20;
+    const plotW = w-padL-padR, plotH = h-padT-padB;
+    const LOG_FLOOR = 0.05;
+
+    const gridVals = atomChartLog ? [0.1,1,10,100] : [0,25,50,75,100];
+    function yOf(v){
+      if(atomChartLog){
+        const vv = Math.max(v, LOG_FLOOR);
+        const lo = Math.log10(LOG_FLOOR), hi = Math.log10(100);
+        const t = (Math.log10(vv)-lo)/(hi-lo);
+        return padT + plotH*(1-t);
+      }
+      return padT + plotH*(1-clamp(v,0,100)/100);
+    }
+    ctx.strokeStyle = 'rgba(44,74,102,0.6)';
+    ctx.lineWidth = 1;
+    ctx.font = "11px 'IBM Plex Mono', monospace";
+    ctx.fillStyle = 'rgba(159,180,199,0.8)';
+    ctx.textAlign='right';
+    gridVals.forEach(v=>{
+      const y = yOf(v);
+      ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(w-padR,y); ctx.stroke();
+      ctx.fillText((v<1?v:Math.round(v))+'%', padL-6, y+3);
+    });
+
+    const ts = atom.history.t, ys = atom.history.pop;
+    if(ts.length<2) return;
+    const tMin = ts[0], tMax = ts[ts.length-1];
+    const xOf = t => padL + (tMax>tMin ? (t-tMin)/(tMax-tMin) : 0)*plotW;
+
+    if(!atomChartLog){
+      ctx.beginPath();
+      ctx.moveTo(xOf(ts[0]), padT+plotH);
+      for(let i=0;i<ts.length;i++) ctx.lineTo(xOf(ts[i]), yOf(ys[i]));
+      ctx.lineTo(xOf(ts[ts.length-1]), padT+plotH);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(180,143,214,0.14)';
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    for(let i=0;i<ts.length;i++){
+      const x=xOf(ts[i]), y=yOf(ys[i]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = '#b48fd6';
+    ctx.lineWidth = 1.8;
+    ctx.stroke();
+
+    // coherence |rho_eg(t)| = 0.5*|ce(t)| -- exact, decays at half the population's rate
+    const cohYs = atom.history.coh;
+    ctx.beginPath();
+    for(let i=0;i<ts.length;i++){
+      const x=xOf(ts[i]), y=yOf(cohYs[i]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = '#e8a0b4';
+    ctx.lineWidth = 1.6;
+    ctx.stroke();
+
+    const Gamma = gammaMarkov();
+    ctx.beginPath();
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle = 'rgba(159,180,199,0.8)';
+    ctx.lineWidth = 1.3;
+    for(let i=0;i<ts.length;i++){
+      const refV = 100*Math.exp(-Gamma*ts[i]);
+      const x=xOf(ts[i]), y=yOf(refV);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function drawBloch(){
+    const {w,h} = setupCanvas(blochCanvas, blochCtx);
+    const ctx = blochCtx;
+    ctx.clearRect(0,0,w,h);
+    const cx = w/2, cy = h/2 + 6;
+    const R = Math.max(20, Math.min(w,h)*0.36);
+    const tilt = 0.38;
+    function proj(x,y,z){
+      return { sx: cx + R*x, sy: cy - R*(z*Math.cos(tilt) - y*Math.sin(tilt)) };
+    }
+
+    ctx.strokeStyle = 'rgba(159,180,199,0.35)'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,Math.PI*2); ctx.stroke();
+
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, R, R*Math.sin(tilt), 0, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(159,180,199,0.3)'; ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+
+    ctx.strokeStyle = 'rgba(159,180,199,0.22)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx,cy-R-10); ctx.lineTo(cx,cy+R+10); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(cx-R-8,cy); ctx.lineTo(cx+R+8,cy); ctx.stroke();
+
+    ctx.font = "italic 15px 'Source Serif 4', serif"; ctx.textAlign='center';
+    ctx.fillStyle = 'rgba(203,176,230,0.9)'; ctx.fillText('|e\u27E9', cx, cy-R-14);
+    ctx.fillStyle = 'rgba(205,217,226,0.85)'; ctx.fillText('|g\u27E9', cx, cy+R+26);
+
+    const hx = atom.bloch.x, hy = atom.bloch.y, hz = atom.bloch.z;
+    const n = hx.length;
+    for(let i=1;i<n;i++){
+      const a = (i/n)*0.55;
+      const p0 = proj(hx[i-1],hy[i-1],hz[i-1]);
+      const p1 = proj(hx[i],hy[i],hz[i]);
+      ctx.strokeStyle = `rgba(232,160,180,${a})`;
+      ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(p0.sx,p0.sy); ctx.lineTo(p1.sx,p1.sy); ctx.stroke();
+    }
+    if(n>0){
+      const x=hx[n-1], y=hy[n-1], z=hz[n-1];
+      const tip = proj(x,y,z), origin = proj(0,0,0);
+      ctx.strokeStyle = '#e8a0b4'; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.moveTo(origin.sx,origin.sy); ctx.lineTo(tip.sx,tip.sy); ctx.stroke();
+      ctx.beginPath(); ctx.arc(tip.sx,tip.sy,5,0,Math.PI*2);
+      ctx.fillStyle = '#e8a0b4'; ctx.fill();
+      ctx.strokeStyle = 'rgba(60,20,30,0.5)'; ctx.lineWidth=1; ctx.stroke();
+    }
+  }
+
+  // ---------- readouts ----------
+  function updateReadouts(fracSys){
+    roSys.textContent = fracSys.toFixed(1)+'%';
+    roEnv.textContent = (100-fracSys).toFixed(1)+'%';
+    roPeriods.textContent = (sim.t/(2*Math.PI)).toFixed(1);
+    if(sim.infiniteMode){
+      if(sim.temperature>0.0005){
+        const target = clamp((sim.temperature/sim.E0)*100, 0, 999);
+        roRevival.textContent = '→ ~'+target.toFixed(1)+'% (thermal)';
+      } else {
+        roRevival.textContent = '∞ (vacuum decay)';
+      }
+    } else if(sim.N>=5 && sim.spread>0.001){
+      const est = (sim.N-1)/(2*sim.spread);
+      roRevival.textContent = '~'+Math.round(est)+' periods';
+    } else if(sim.spread<=0.001){
+      roRevival.textContent = 'fast, forever';
+    } else {
+      roRevival.textContent = '—';
+    }
+    degenWarn.classList.toggle('show', sim.spread<=0.001 && sim.N>=3 && !sim.infiniteMode);
+    infiniteNote.classList.toggle('show', sim.infiniteMode);
+  }
+
+  function updateAtomReadouts(pop, coh){
+    roPopE.textContent = (pop*100).toFixed(1)+'%';
+    roPopG.textContent = ((1-pop)*100).toFixed(1)+'%';
+    roCoherence.textContent = (coh*100).toFixed(1)+'%';
+    roGammaMarkov.textContent = gammaMarkov().toFixed(4);
+    const Gamma = gammaMarkov();
+    const T1periods = (1/Gamma)/(2*Math.PI);
+    const T2periods = 2*T1periods;
+    roT1.textContent = T1periods.toFixed(2)+' periods';
+    roT2.textContent = T2periods.toFixed(2)+' periods';
+  }
+
+  // ---------- animation loop ----------
+  function frame(){
+    requestAnimationFrame(frame);
+    if(sim.playing){
+      const substeps = Math.max(1, Math.round(BASE_SUBSTEPS*sim.speed));
+      for(let s=0;s<substeps;s++) rk4Step(DT);
+      if(sim.infiniteMode && sim.temperature>0){
+        // Euler–Maruyama kick, equivalent in distribution to applying it every substep
+        const frameDt = substeps*DT;
+        sim.vel[0] += Math.sqrt(2*sim.gamma*sim.temperature*frameDt) * gaussianRandom();
+      }
+      const e = energies();
+      const fracSys = (e.eSys/sim.E0)*100;
+      sim.history.t.push(sim.t);
+      sim.history.sys.push(fracSys);
+      sim.history.th0.push(sim.theta[0]);
+      sim.history.v0.push(sim.vel[0]);
+      if(sim.history.t.length>3000){ sim.history.t.shift(); sim.history.sys.shift(); sim.history.th0.shift(); sim.history.v0.shift(); }
+      sim.trail.push(sim.theta[0]);
+      if(sim.trail.length>7) sim.trail.shift();
+      updateReadouts(fracSys);
+
+      for(let s=0;s<substeps;s++) atomStep(DT);
+      const pop = atom.qRe[0]*atom.qRe[0] + atom.qIm[0]*atom.qIm[0];
+      const coh = 0.5*Math.sqrt(pop); // |rho_eg| = |alpha*beta*|*|ce(t)|, alpha=beta=1/sqrt2 -> exact, any N
+      atom.history.t.push(atom.t);
+      atom.history.pop.push(pop*100);
+      atom.history.coh.push(coh*100);
+      if(atom.history.t.length>3000){ atom.history.t.shift(); atom.history.pop.shift(); atom.history.coh.shift(); }
+      updateAtomReadouts(pop, coh);
+
+      // Bloch vector for the 50/50-superposition scenario, alpha=beta=1/sqrt2:
+      // x = 2*Re(rho_eg) = Re(ce),  y = -2*Im(rho_eg) = -Im(ce),  z = rho_ee-rho_gg = pop-1
+      const bx = atom.qRe[0], by = -atom.qIm[0], bz = pop - 1;
+      atom.bloch.x.push(bx); atom.bloch.y.push(by); atom.bloch.z.push(bz);
+      if(atom.bloch.x.length>400){ atom.bloch.x.shift(); atom.bloch.y.shift(); atom.bloch.z.shift(); }
+      roPurity.textContent = (Math.sqrt(bx*bx+by*by+bz*bz)*100).toFixed(1)+'%';
+    }
+    drawScene();
+    drawChart();
+    drawPhase();
+    drawSpectrum();
+    drawAtomLevels();
+    drawAtomChart();
+    drawBloch();
+  }
+
+  // ---------- UI wiring ----------
+  function setActivePreset(idx){
+    presetBtns.forEach((b,i)=>b.classList.toggle('active', i===idx));
+  }
+  function clearActivePreset(){ presetBtns.forEach(b=>b.classList.remove('active')); }
+
+  function applyPreset(idx){
+    const p = presets[idx];
+    sim.N = p.N; sim.spread = p.spread; sim.kappaTotal = p.kappa; sim.gamma = p.gamma;
+    sim.infiniteMode = !!p.infinite;
+    sliderN.value = p.N; sliderSpread.value = p.spread; sliderKappa.value = p.kappa; sliderGamma.value = p.gamma; sliderTemp.value = p.temperature;
+    labelN.textContent = p.N;
+    labelSpread.textContent = p.spread.toFixed(2);
+    labelKappa.textContent = p.kappa.toFixed(2);
+    labelGamma.textContent = p.gamma.toFixed(3);
+    labelTemp.textContent = p.temperature.toFixed(3);
+    sim.temperature = p.temperature;
+    gammaField.style.display = sim.infiniteMode ? 'block' : 'none';
+    resetSim(true);
+    setActivePreset(idx);
+    if(!sim.playing){ sim.playing=true; playBtn.textContent='⏸ Pause'; }
+  }
+
+  presetBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=> applyPreset(parseInt(btn.dataset.preset,10)));
+  });
+
+  playBtn.addEventListener('click', ()=>{
+    sim.playing = !sim.playing;
+    playBtn.textContent = sim.playing ? '⏸ Pause' : '▶ Play';
+  });
+  resetBtn.addEventListener('click', ()=> resetSim(true));
+
+  sliderN.addEventListener('input', ()=>{ labelN.textContent = sliderN.value; });
+  sliderN.addEventListener('change', ()=>{
+    sim.N = parseInt(sliderN.value,10);
+    resetSim(true);
+    clearActivePreset();
+  });
+
+  sliderSpread.addEventListener('input', ()=>{
+    sim.spread = parseFloat(sliderSpread.value);
+    labelSpread.textContent = sim.spread.toFixed(2);
+    computeOmegaArray();
+    clearActivePreset();
+  });
+
+  sliderKappa.addEventListener('input', ()=>{
+    sim.kappaTotal = parseFloat(sliderKappa.value);
+    labelKappa.textContent = sim.kappaTotal.toFixed(2);
+    computeKappaArray();
+    clearActivePreset();
+  });
+
+  sliderGamma.addEventListener('input', ()=>{
+    sim.gamma = parseFloat(sliderGamma.value);
+    labelGamma.textContent = sim.gamma.toFixed(3);
+    clearActivePreset();
+  });
+
+  sliderTemp.addEventListener('input', ()=>{
+    sim.temperature = parseFloat(sliderTemp.value);
+    labelTemp.textContent = sim.temperature.toFixed(3);
+    clearActivePreset();
+  });
+
+  logToggle.addEventListener('click', ()=>{
+    chartLog = !chartLog;
+    logToggle.textContent = 'Log scale: ' + (chartLog ? 'On' : 'Off');
+  });
+
+  atomLogToggle.addEventListener('click', ()=>{
+    atomChartLog = !atomChartLog;
+    atomLogToggle.textContent = 'Log scale: ' + (atomChartLog ? 'On' : 'Off');
+  });
+
+  sliderSpeed.addEventListener('input', ()=>{
+    sim.speed = parseFloat(sliderSpeed.value);
+    labelSpeed.textContent = sim.speed.toFixed(2)+'×';
+  });
+
+  window.addEventListener('resize', ()=>{ /* canvases resize on next frame via setupCanvas */ });
+
+  // ---------- init ----------
+  applyPreset(0);
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
